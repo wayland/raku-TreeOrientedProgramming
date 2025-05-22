@@ -1,0 +1,61 @@
+#!/usr/bin/raku
+
+use	TreeOrientedProgramming;
+
+use	Test;
+
+my (@results);
+
+my (@inputs) = ( ('A',), ('B','C', ('E','F','G', %( 'A' => 'E', 'E' => 'A'))));
+
+subtest 'Descendent tests on regular arrays', {
+	plan 3;
+
+	# Test child
+	@inputs ⪪ { $_ eq 'B' } ==> @results;
+	ok @results ≡ ('B'), 'Child test: Selecting B got B';
+
+	# Test descendent (also tests self)
+	@results = ();
+	@inputs ⪪⪪ { $_ eq 'E' } ==> @results;
+	ok @results ≡ ('E'), 'Descendent test (also tests self): Selecting E got E';
+
+	# Test attribute
+	@results = ();
+	@inputs ⪪⪪ { True} ⯩ { $_ eq 'E' } ==> @results;
+	ok @results ≡ ('A'), 'Attribute test: Selecting key = E got A';
+}
+
+my $xmlstart;
+
+use	lib '../../XML/add-Iterable/lib/';
+
+use	XML;
+
+my $xmldoc = from-xml-file("resources/index.xml");
+$xmlstart = $xmldoc.root;
+
+@results = ();
+#say "will self";
+
+subtest	'Descendent tests on XML document', {
+
+	[$xmlstart] ⪪⪪ {
+		($_ ~~ XML::Element) and (.name() eq 'li')
+	} ⪪ {
+		($_ ~~ XML::Element) and (.name() eq 'b')
+	}==> @results;
+
+	my Bool $finalresult = True;
+	for @results Z [
+		'<b>Regular Program Editor:</b>',
+		'<b>Source control visual tools:</b>',
+		'<b>Relation Code Editors:</b>',
+		'<b>Dataflow Code Editors:</b>',
+	] -> ($result, $text) {
+		$finalresult &&= $result eq $text;
+	}
+	ok($finalresult, "Bold strings are as expected");
+}
+
+#say @results.raku;
